@@ -1,0 +1,29 @@
+/* GENERAL CONFIG */
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+
+}
+
+html { height:100%; }
+
+body { height: 100%; }
+
+/* Custom */
+
+#app {
+    padding: 50px;
+}
+
+.scrollable-list-group {
+    max-height: 300px;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+}
+
+.flex-list-item {
+    display: flex; 
+    flex-direction: column; 
+    justify-content: center;
+}

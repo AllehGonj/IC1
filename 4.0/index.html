@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perceptron JS</title>
+
+    <!-- VUE LIBRARY -->
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <!-- BOOTSTRAP CSS LIBRARY -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <!-- FONT AWESOME CSS LIBRARY -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- LOCAL CSS FILE -->
+    <link rel="stylesheet" href="stylesheet.css">
+</head>
+<body>
+    <!-- VUE ELEMENT INSTANCE -->
+    <div id="app">
+        <div class="alert alert-warning alert-dismissible fade show" role="alert" v-if="showIterationsAlert">
+            <strong>Ups!</strong> No se encontro la solucion en mil iteraciones, prueba cambiando el factor de aprendizaje o puede que no haya una solucion con un perceptron simple.
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+
+        <div class="row">
+            <div class="col-12" style="display: flex; justify-content: flex-end; align-items: center;">
+                <button type="button"  class="btn text-dark" style="font-size: 20px;" data-toggle="modal" data-target="#infoModal">
+                    <i class="fa fa-info-circle" aria-hidden="true" data-toggle="tooltip" data-placement="left" title="Informacion"></i>
+                </button>
+                <button type="button" class="btn btn-primary" @click="calculatePerceptron">Calcular</button>
+            </div>
+        </div>
+
+        <br>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-secondary">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item list-group-item-action bg-light">
+                        Perceptron
+                        </li>
+                        <li class="list-group-item list-group-item-action">
+                            Funcion: {{ formula }}
+                        </li>
+                        <li class="list-group-item list-group-item-action">
+                            Número de iteraciones: {{ iterations }}
+                        </li>
+                        <li class="list-group-item list-group-item-action">
+                            Factor de aprendizaje: {{ learningFactor }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <br>
+        <hr>
+        <br>
+
+        <!-- SETTINGS FORM -->
+        <div class="row">
+            <div class="col-md-6 col-sm-12">
+                <div class="card border-secondary">
+                    <div class="card-header bg-light">Configuracion</div>
+                    <div class="card-body">
+                        <form>
+                            <div class="row">
+                                <div class="col-6 form-group">
+                                    <label for="varNum">Número de features</label>
+                                    <input type="number" min="1" max="20" class="form-control" id="varNum" placeholder="0" v-model="variablesNum" @keyup="validateVarNum">
+                                </div>
+                                <div class="col-6 form-group">
+                                    <label for="MaxNumData">Número máximo de datos</label>
+                                    <input type="number" min="1" max="20" class="form-control" id="MaxNumData" placeholder="0" v-model="maxNumData" @keyup="validateMaxNumData">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-6 form-group">
+                                    <label for="learningFactor">Factor de aprendizaje</label>
+                                    <input type="number" min="0" max="1" step="0.05" class="form-control" id="learningFactor" placeholder="0" v-model="learningFactor" @keyup="validateLearnFactor">
+                                </div>
+                                <div class="col-6 form-group">
+                                    <label for="bias">Bias</label>
+                                    <input type="number" min="-10" max="10" class="form-control" id="bias" placeholder="0" v-model="bias" @keyup="validateBias">
+                                </div>
+                            </div>
+                
+                            <div class="row" style="display: flex; justify-content: center;">
+                                <div class="col-12">
+                                    <ul class="list-group scrollable-list-group">
+                                        <li class="list-group-item list-group-item-secondary">Valores de los features</li>
+                                        <li class="list-group-item" v-for="(variable, index) in variablesValues">
+                                            <div class="row">
+                                                <div class="col-4 flex-list-item">Feature x{{ index + 1 }} </div>
+                                                <div class="col-4 form-group">
+                                                    <label>Valor minimo</label>
+                                                    <input type="number" class="form-control" placeholder="0" v-model="variable.min">
+                                                </div>
+                                                <div class="col-4">
+                                                    <label>Valor máximo</label>
+                                                    <input type="number" class="form-control" placeholder="0" v-model="variable.max">
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <br>
+
+            <!-- DATA TABLES -->
+            <div class="col-md-6 col-sm-12">
+                <div class="card border-secondary">
+                    <div class="card-header bg-light">Datos crudos</div>
+                    <div class="card-body scrollable-list-group">
+                        <table class="table text-center">
+                            <thead>
+                              <tr>
+                                <th scope="col" v-for="header in rawDataHeaders">
+                                    {{ header }}
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr v-for="(features, i) in rawDataValues">
+                                <td v-for="(data, j) in features">
+                                    <input type="number" class="form-control" placeholder="0" v-model="rawDataValues[i][j]" v-if="j < variablesNum">
+                                    <select class="form-control" v-model="rawDataValues[i][j]" v-if="j >= variablesNum">
+                                        <option v-for="result in conditionResults" :value="result.value">
+                                            {{ result.label }}
+                                        </option>
+                                    </select>
+                                </td>
+                              </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <br>
+
+                <div class="card border-secondary">
+                    <div class="card-header bg-light">Matriz de entrenamiento</div>
+                    <div class="card-body scrollable-list-group">
+                        <table class="table text-center">
+                            <thead>
+                              <tr>
+                                <th scope="col" v-for="header in rawDataHeaders">
+                                    {{ header }}
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(data, index) in normalizeDataValues">
+                                    <td v-for="finalData in data">{{ Math.round(finalData * 100) / 100 }}</td>
+                                </tr>
+                            </tbody>
+                          </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INFORMATION MODAL -->
+        <div class="modal fade" id="infoModal" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Informacion</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h4>Perceptron</h4>
+                    <ol style="padding: 0 3.5em;">
+                        <li>En el sector de configuracion establece todo los valores generales para realizar el pertinente calculo mediante un perceptron simple.</li>
+                        <li>En el area de datos crudos, ingresa los valores de los features todo acorde con la configuracion establecida en el paso anterior.</li>
+                        <li>Eso es todo, da click en el boton calcular, se podran visualizar la matriz de entrenamento y los resultados del calculo. En caso de no poder encontrar una solucion se desplegara un alerta indicando lo sucecido.</li>
+                    </ol>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+    </div>
+
+    <!-- LOCAL JS FILE -->
+    <script src="./index.js"></script>
+    <!-- BOOTSTRAP JS DEPENDENCIES -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
+</body>
+</html>
